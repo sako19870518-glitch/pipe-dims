@@ -4,65 +4,104 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>管種・口径 寸法検索</title>
+
+<!-- PWA を使っているなら下3行はそのまま残してOK（無ければ削除しても可） -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
 <style>
+  /* ====== Dark Minimal ====== */
   :root{
-    --bg:#f6f7f9; --card:#fff; --line:#e6e8eb; --ink:#111; --muted:#6b7280;
-    --accent:#111; --accent-ink:#fff; --shadow:0 10px 30px rgba(0,0,0,.08); --radius:18px;
+    --bg:#0a0a0a;         /* 背景(ほぼ黒) */
+    --ink:#f6f7f9;        /* 文字(白) */
+    --muted:#9aa0a6;      /* 補助文字 */
+    --line:#3a3a3a;       /* 下線/境界 */
+    --accent:#ffffff;     /* ボタン文字 */
+    --accent-bg:#1f1f1f;  /* ボタン背景 */
+    --accent-hover:#2a2a2a;
   }
   html,body{height:100%}
-  body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--ink)}
-  .wrap{max-width:780px;margin:0 auto;padding:20px 16px 40px}
-  .title{font-weight:800;font-size:20px;margin:6px 4px 14px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-  .row{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;margin:10px 0}
-  .label{color:var(--muted);font-size:14px;text-align:right;padding-right:4px;white-space:nowrap}
-  select{height:48px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:17px;background:#fff}
-  .actions{display:flex;gap:10px;margin:14px 0 8px}
-  .btn{flex:1;height:48px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:16px;font-weight:700;cursor:pointer}
-  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-  .result{margin-top:16px;display:grid;gap:12px}
-  .kv{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center}
-  .k{color:var(--muted);text-align:right}
-  .v{font-weight:700;font-size:18px}
-  .hint{color:var(--muted);font-size:13px;margin-top:6px}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui,-apple-system,Segoe UI,Roboto,
+                 "Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding:28px 18px 56px;}
+  .title{font-size:28px; font-weight:800; letter-spacing:.02em; margin:0 0 24px;}
+  .row{display:grid; grid-template-columns:120px 1fr; gap:18px; align-items:end; margin:18px 0;}
+  .label{color:var(--muted); font-size:14px; letter-spacing:.06em}
+  .ctl{position:relative}
+  /* アンダーライン入力: select も input も同じ見た目 */
+  .uinput{
+    width:100%; background:transparent; color:var(--ink);
+    font-size:22px; letter-spacing:.02em; padding:6px 0 10px;
+    border:none; outline:none; border-bottom:1.5px solid var(--line);
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  }
+  /* select の矢印（極控えめ） */
+  .ctl::after{
+    content:""; position:absolute; right:0; bottom:12px; width:36px; height:1.5px; background:var(--line);
+  }
+  .hint{color:var(--muted); font-size:12px; margin-top:6px}
+
+  /* 結果カード（線と余白のみ） */
+  .card{margin-top:26px; padding:16px 2px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .kv{display:grid; grid-template-columns:160px 1fr; gap:10px; align-items:center; padding:10px 0;}
+  .k{color:var(--muted); font-size:14px; letter-spacing:.06em}
+  .v{font-size:22px; font-weight:700}
+
+  /* ボタンはフラットに */
+  .actions{display:flex; gap:12px; margin:24px 0 8px}
+  .btn{
+    flex:1; height:56px; border-radius:14px; border:1px solid var(--line);
+    color:var(--accent); background:var(--accent-bg); font-size:18px; font-weight:800; letter-spacing:.08em;
+    cursor:pointer;
+  }
+  .btn:hover{ background:var(--accent-hover) }
+
+  /* スマホ向け微調整 */
+  @media (max-width:560px){
+    .row{grid-template-columns:92px 1fr; gap:14px}
+    .kv{grid-template-columns:120px 1fr}
+    .title{font-size:24px}
+    .uinput{font-size:20px}
+    .v{font-size:20px}
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="title">管種・口径 寸法検索</div>
+    <h1 class="title">管種・口径 寸法検索</h1>
 
-    <div class="card">
-      <div class="row">
-        <div class="label">管種</div>
-        <select id="pipeType"></select>
-      </div>
-      <div class="row">
-        <div class="label">呼び径</div>
-        <select id="nominal"></select>
-      </div>
-
-      <div class="actions">
-        <button id="search" class="btn primary">検索</button>
-        <button id="clear" class="btn">クリア</button>
-      </div>
-
-      <div id="status" class="hint">データを読み込み中…</div>
+    <!-- 入力部（黒＋アンダーライン） -->
+    <div class="row">
+      <div class="label">管種</div>
+      <div class="ctl"><select id="pipeType" class="uinput"></select></div>
+    </div>
+    <div class="row">
+      <div class="label">呼び径</div>
+      <div class="ctl"><select id="nominal" class="uinput"></select></div>
     </div>
 
-    <div id="out" class="card" style="margin-top:16px; display:none">
-      <div class="result">
-        <div class="kv"><div class="k">管種</div><div class="v" id="o_type">-</div></div>
-        <div class="kv"><div class="k">呼び径</div><div class="v" id="o_nominal">-</div></div>
-        <div class="kv"><div class="k">外径</div><div class="v" id="o_outer">-</div></div>
-        <div class="kv"><div class="k">管厚（1種）</div><div class="v" id="o_t1">-</div></div>
-        <div class="kv"><div class="k">管厚（3種）</div><div class="v" id="o_t3">-</div></div>
-        <div class="kv"><div class="k">ライニング種</div><div class="v" id="o_ltype">-</div></div>
-        <div class="kv"><div class="k">ライニング厚</div><div class="v" id="o_lth">-</div></div>
-        <div class="kv"><div class="k">検出器</div><div class="v" id="o_det">-</div></div>
-        <div class="kv"><div class="k">インデックス</div><div class="v" id="o_idx">-</div></div>
-      </div>
-      <div class="hint">※ 値はExcelシートの内容をJSON化したレコードから取得しています。</div>
+    <div class="actions">
+      <button id="search" class="btn">検索</button>
+      <button id="clear" class="btn">クリア</button>
     </div>
+    <div id="status" class="hint">データを読み込み中…</div>
+
+    <!-- 結果（F=全部表示） -->
+    <section id="out" class="card" style="display:none">
+      <div class="kv"><div class="k">管種</div>          <div class="v" id="o_type">-</div></div>
+      <div class="kv"><div class="k">呼び径</div>        <div class="v" id="o_nominal">-</div></div>
+      <div class="kv"><div class="k">外径</div>          <div class="v" id="o_outer">-</div></div>
+      <div class="kv"><div class="k">管厚（1種）</div>   <div class="v" id="o_t1">-</div></div>
+      <div class="kv"><div class="k">管厚（3種）</div>   <div class="v" id="o_t3">-</div></div>
+      <div class="kv"><div class="k">ライニング種</div>  <div class="v" id="o_ltype">-</div></div>
+      <div class="kv"><div class="k">ライニング厚</div>  <div class="v" id="o_lth">-</div></div>
+      <div class="kv"><div class="k">検出器</div>        <div class="v" id="o_det">-</div></div>
+      <div class="kv"><div class="k">インデックス</div>  <div class="v" id="o_idx">-</div></div>
+    </section>
   </div>
 
   <script>
@@ -74,42 +113,41 @@
 
     let DATA = [];
 
-    // 1) JSONロード
     async function loadData(){
-      statusEl.textContent = "データを読み込み中…";
-      const res = await fetch("./pipe_dimensions.json", { cache:"no-cache" });
-      if(!res.ok){ statusEl.textContent = "データが見つかりません（pipe_dimensions.json を同じ階層に置いてください）"; return; }
-      DATA = await res.json();
+      try{
+        statusEl.textContent = "データを読み込み中…";
+        const res = await fetch("./pipe_dimensions.json", { cache:"no-cache" });
+        if(!res.ok) throw new Error("pipe_dimensions.json が見つかりません");
+        DATA = await res.json();
 
-      // 管種のユニーク候補
-      const types = [...new Set(DATA.map(r => r.pipe_type).filter(Boolean))].sort();
-      pipeSel.innerHTML = `<option value="">選択してください</option>` + types.map(t=>`<option value="${t}">${t}</option>`).join("");
-
-      // 呼び径は管種選択までは空
-      nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`;
-      statusEl.textContent = "管種を選んでください。";
+        // 管種のユニーク候補
+        const types = [...new Set(DATA.map(r=>r.pipe_type).filter(Boolean))].sort();
+        pipeSel.innerHTML = `<option value="">選択してください</option>` + types.map(t=>`<option value="${t}">${t}</option>`).join("");
+        nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`;
+        statusEl.textContent = "管種を選んでください。";
+      }catch(e){
+        statusEl.textContent = e.message;
+      }
     }
 
-    // 2) 管種選択で呼び径候補を更新
     pipeSel.addEventListener("change", ()=>{
       const t = pipeSel.value;
       if(!t){ nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`; statusEl.textContent="管種を選んでください。"; return; }
-      const ns = [...new Set(DATA.filter(r=>r.pipe_type===t).map(r=>r.nominal_diameter))].filter(v=>v!==null && v!==undefined).sort((a,b)=>a-b);
+      const ns = [...new Set(DATA.filter(r=>r.pipe_type===t).map(r=>r.nominal_diameter))]
+                  .filter(v=>v!==null && v!==undefined)
+                  .sort((a,b)=>Number(a)-Number(b));
       nominalSel.innerHTML = `<option value="">選択してください</option>` + ns.map(n=>`<option value="${n}">${n}</option>`).join("");
       statusEl.textContent = "呼び径を選んでください。";
     });
 
-    // 3) 検索
     $("#search").addEventListener("click", ()=>{
       const t = pipeSel.value;
       const n = nominalSel.value ? Number(nominalSel.value) : null;
-      if(!t || n===null){ statusEl.textContent="管種/呼び径を選んでから検索してください。"; return; }
+      if(!t || n===null){ statusEl.textContent = "管種/呼び径を選んでから検索してください。"; return; }
 
-      // 最初に一致したレコード
-      const rec = DATA.find(r => r.pipe_type===t && Number(r.nominal_diameter)===n);
-      if(!rec){ statusEl.textContent="一致するデータが見つかりません。"; outCard.style.display="none"; return; }
+      const rec = DATA.find(r=>r.pipe_type===t && Number(r.nominal_diameter)===n);
+      if(!rec){ statusEl.textContent = "一致するデータが見つかりません。"; outCard.style.display="none"; return; }
 
-      // 出力（F=全部表示）
       $("#o_type").textContent = rec.pipe_type ?? "-";
       $("#o_nominal").textContent = rec.nominal_diameter ?? "-";
       $("#o_outer").textContent = rec.outer_diameter ?? "-";
@@ -124,7 +162,6 @@
       statusEl.textContent = "検索完了。";
     });
 
-    // 4) クリア
     $("#clear").addEventListener("click", ()=>{
       pipeSel.selectedIndex = 0;
       nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`;
@@ -132,8 +169,12 @@
       statusEl.textContent = "管種を選んでください。";
     });
 
-    // 初期化
     loadData();
+
+    // PWA登録（ファイルがあればそのまま有効）
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+    }
   </script>
 </body>
 </html>
