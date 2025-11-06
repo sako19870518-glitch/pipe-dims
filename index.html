@@ -5,68 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>管種・口径 寸法検索</title>
 
-<!-- PWA を使うなら manifest 等を置けば自動で有効。未設置なら無視されます。 -->
+<!-- PWA（任意）。置けば有効、無ければ無視されます -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 
 <style>
-  /* ====== Dark Minimal ====== */
-  :root{
-    --bg:#000;          /* 背景(黒) */
-    --ink:#eaeaea;      /* 文字(明るい灰) */
-    --muted:#9aa0a6;    /* 補助文字 */
-    --line:#4a4a4a;     /* 下線/境界 */
-  }
-  html,body{height:100%}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
-  }
-  .wrap{max-width:760px;margin:0 auto;padding:28px 18px 56px}
-  .title{font-size:22px;font-weight:800;margin:0 0 10px;letter-spacing:.02em}
+:root{
+  --bg:#fafafa;
+  --ink:#111;
+  --muted:#6b6b6b;
+  --line:#d0d0d0;
+}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP","Yu Gothic",Meiryo,sans-serif;
+}
+.wrap{max-width:760px;margin:0 auto;padding:28px 18px 56px}
+.title{font-size:22px;font-weight:800;margin:0 0 18px;letter-spacing:.03em}
 
-  /* 行を詰めてミニマルに */
-  .row{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:end;margin:12px 0}
-  .label{color:var(--muted);font-size:13px;letter-spacing:.08em}
+.row{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:end;margin:16px 0}
+.label{color:var(--muted);font-size:13px;letter-spacing:.06em}
 
-  /* 一本線だけの入力（select） */
-  .ctl{position:relative}
-  .uinput{
-    width:100%; background:transparent; color:var(--ink);
-    font-size:20px; letter-spacing:.02em; padding:4px 0 8px;
-    border:none; outline:none; border-bottom:1px solid var(--line);
-    appearance:none; -webkit-appearance:none; -moz-appearance:none;
-  }
-  /* 右の矢印などの飾りは出さない（一本線だけの見た目） */
-  .ctl::after{content:none}
+.ctl{position:relative}
+.uinput{
+  width:100%; background:transparent; color:var(--ink);
+  font-size:20px; letter-spacing:.02em; padding:6px 0 10px;
+  border:none; outline:none; border-bottom:1.5px solid var(--line);
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+}
 
-  .actions{display:flex;gap:10px;margin:18px 0 6px}
-  .btn{
-    flex:1; height:48px; border-radius:12px; border:1px solid var(--line);
-    background:#121212; color:#fff; font-size:16px; font-weight:700; letter-spacing:.06em; cursor:pointer;
-  }
-  .btn:hover{background:#1b1b1b}
-  .hint{color:var(--muted);font-size:12px;margin-top:4px}
+.actions{display:flex;gap:12px;margin:26px 0 8px}
+.btn{
+  flex:1; height:52px; border-radius:14px; border:1px solid var(--line);
+  background:#ffffff; color:#111; font-size:17px; font-weight:700; cursor:pointer;
+}
+.btn:hover{background:#f1f1f1}
+.hint{color:var(--muted);font-size:12px;margin-top:4px}
 
-  /* 結果：線と余白だけ（フラット） */
-  .card{margin-top:18px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center;padding:6px 0}
-  .k{color:var(--muted);font-size:13px;letter-spacing:.06em}
-  .v{font-size:20px;font-weight:700}
+.card{margin-top:18px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:8px;align-items:center;padding:6px 0}
+.k{color:var(--muted);font-size:13px;letter-spacing:.06em}
+.v{font-size:20px;font-weight:700}
 
-  @media (max-width:560px){
-    .row{grid-template-columns:92px 1fr;gap:12px}
-    .kv{grid-template-columns:110px 1fr}
-    .uinput{font-size:18px}
-    .v{font-size:18px}
-  }
+@media (max-width:560px){
+  .row{grid-template-columns:92px 1fr;gap:12px}
+  .kv{grid-template-columns:110px 1fr}
+  .uinput{font-size:18px}
+  .v{font-size:18px}
+}
 </style>
 </head>
 <body>
   <div class="wrap">
     <h1 class="title">管種・口径 寸法検索</h1>
 
-    <!-- 入力（黒＋極細アンダーライン） -->
     <div class="row">
       <div class="label">管種</div>
       <div class="ctl"><select id="pipeType" class="uinput"></select></div>
@@ -82,7 +76,6 @@
     </div>
     <div id="status" class="hint">データを読み込み中…</div>
 
-    <!-- 結果（F=全部表示） -->
     <section id="out" class="card" style="display:none">
       <div class="kv"><div class="k">管種</div>          <div class="v" id="o_type">-</div></div>
       <div class="kv"><div class="k">呼び径</div>        <div class="v" id="o_nominal">-</div></div>
@@ -97,28 +90,21 @@
   </div>
 
   <script>
-    // ユーティリティ
     const $ = (s)=>document.querySelector(s);
     const pipeSel = $("#pipeType");
     const nominalSel = $("#nominal");
     const statusEl = $("#status");
     const outCard = $("#out");
-
     let DATA = [];
 
-    // JSONロード（NaN等が入っても弾く安全策付き）
     async function loadData(){
       try{
         statusEl.textContent = "データを読み込み中…";
         const res = await fetch("./pipe_dimensions.json", { cache:"no-cache" });
         if(!res.ok) throw new Error("pipe_dimensions.json が見つかりません。同じ階層に置いてください。");
         const raw = await res.text();
-        // NaN/Infinity が混入していても JSON として読めるように前処理
         const safe = raw.replace(/\bNaN\b/gi, "null").replace(/\bInfinity\b/gi, "null").replace(/\b-Infinity\b/gi, "null");
-        DATA = JSON.parse(safe);
-
-        // 必要フィールドだけ抽出（安全）
-        DATA = DATA.map(r=>({
+        DATA = JSON.parse(safe).map(r=>({
           pipe_type: r.pipe_type ?? r["管種"] ?? null,
           nominal_diameter: (r.nominal_diameter ?? r["呼び径"] ?? null),
           outer_diameter: r.outer_diameter ?? r["外径"] ?? null,
@@ -130,7 +116,6 @@
           index_value: r.index_value ?? r["インデックス"] ?? null
         })).filter(r=>r.pipe_type!=null && r.nominal_diameter!=null);
 
-        // 管種候補
         const types = [...new Set(DATA.map(r=>r.pipe_type).filter(Boolean))].sort();
         pipeSel.innerHTML = `<option value="">選択してください</option>` + types.map(t=>`<option value="${t}">${t}</option>`).join("");
         nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`;
@@ -140,27 +125,21 @@
       }
     }
 
-    // 管種選択 → 呼び径候補を生成（数値順）
     pipeSel.addEventListener("change", ()=>{
       const t = pipeSel.value;
       if(!t){ nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`; statusEl.textContent="管種を選んでください。"; return; }
-      const ns = [...new Set(
-        DATA.filter(r=>r.pipe_type===t).map(r=>r.nominal_diameter)
-      )].filter(v=>v!==null && v!==undefined)
-       .map(v=>Number(v))
-       .filter(v=>!Number.isNaN(v))
-       .sort((a,b)=>a-b);
-
+      const ns = [...new Set(DATA.filter(r=>r.pipe_type===t).map(r=>r.nominal_diameter))]
+        .filter(v=>v!==null && v!==undefined)
+        .map(v=>Number(v)).filter(v=>!Number.isNaN(v))
+        .sort((a,b)=>a-b);
       nominalSel.innerHTML = `<option value="">選択してください</option>` + ns.map(n=>`<option value="${n}">${n}</option>`).join("");
       statusEl.textContent = "呼び径を選んでください。";
     });
 
-    // 検索
     $("#search").addEventListener("click", ()=>{
       const t = pipeSel.value;
       const n = nominalSel.value ? Number(nominalSel.value) : null;
       if(!t || n===null){ statusEl.textContent = "管種/呼び径を選んでから検索してください。"; return; }
-
       const rec = DATA.find(r=>r.pipe_type===t && Number(r.nominal_diameter)===n);
       if(!rec){ statusEl.textContent = "一致するデータが見つかりません。"; outCard.style.display="none"; return; }
 
@@ -178,7 +157,6 @@
       statusEl.textContent = "検索完了。";
     });
 
-    // クリア
     $("#clear").addEventListener("click", ()=>{
       pipeSel.selectedIndex = 0;
       nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`;
@@ -186,13 +164,10 @@
       statusEl.textContent = "管種を選んでください。";
     });
 
-    // 初期化
     loadData();
 
-    // （任意）PWA登録：service-worker.js があれば使われる
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
-    }
+    // PWA: service-worker.js があれば自動で有効
+    if('serviceWorker' in navigator){ navigator.serviceWorker.register('./service-worker.js').catch(()=>{}); }
   </script>
 </body>
 </html>
