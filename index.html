@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>管種・口径 寸法検索</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --line:#e6e8eb; --ink:#111; --muted:#6b7280;
+    --accent:#111; --accent-ink:#fff; --shadow:0 10px 30px rgba(0,0,0,.08); --radius:18px;
+  }
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--ink)}
+  .wrap{max-width:780px;margin:0 auto;padding:20px 16px 40px}
+  .title{font-weight:800;font-size:20px;margin:6px 4px 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .row{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;margin:10px 0}
+  .label{color:var(--muted);font-size:14px;text-align:right;padding-right:4px;white-space:nowrap}
+  select{height:48px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:17px;background:#fff}
+  .actions{display:flex;gap:10px;margin:14px 0 8px}
+  .btn{flex:1;height:48px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:16px;font-weight:700;cursor:pointer}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  .result{margin-top:16px;display:grid;gap:12px}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center}
+  .k{color:var(--muted);text-align:right}
+  .v{font-weight:700;font-size:18px}
+  .hint{color:var(--muted);font-size:13px;margin-top:6px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">管種・口径 寸法検索</div>
+
+    <div class="card">
+      <div class="row">
+        <div class="label">管種</div>
+        <select id="pipeType"></select>
+      </div>
+      <div class="row">
+        <div class="label">呼び径</div>
+        <select id="nominal"></select>
+      </div>
+
+      <div class="actions">
+        <button id="search" class="btn primary">検索</button>
+        <button id="clear" class="btn">クリア</button>
+      </div>
+
+      <div id="status" class="hint">データを読み込み中…</div>
+    </div>
+
+    <div id="out" class="card" style="margin-top:16px; display:none">
+      <div class="result">
+        <div class="kv"><div class="k">管種</div><div class="v" id="o_type">-</div></div>
+        <div class="kv"><div class="k">呼び径</div><div class="v" id="o_nominal">-</div></div>
+        <div class="kv"><div class="k">外径</div><div class="v" id="o_outer">-</div></div>
+        <div class="kv"><div class="k">管厚（1種）</div><div class="v" id="o_t1">-</div></div>
+        <div class="kv"><div class="k">管厚（3種）</div><div class="v" id="o_t3">-</div></div>
+        <div class="kv"><div class="k">ライニング種</div><div class="v" id="o_ltype">-</div></div>
+        <div class="kv"><div class="k">ライニング厚</div><div class="v" id="o_lth">-</div></div>
+        <div class="kv"><div class="k">検出器</div><div class="v" id="o_det">-</div></div>
+        <div class="kv"><div class="k">インデックス</div><div class="v" id="o_idx">-</div></div>
+      </div>
+      <div class="hint">※ 値はExcelシートの内容をJSON化したレコードから取得しています。</div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (s)=>document.querySelector(s);
+    const pipeSel = $("#pipeType");
+    const nominalSel = $("#nominal");
+    const statusEl = $("#status");
+    const outCard = $("#out");
+
+    let DATA = [];
+
+    // 1) JSONロード
+    async function loadData(){
+      statusEl.textContent = "データを読み込み中…";
+      const res = await fetch("./pipe_dimensions.json", { cache:"no-cache" });
+      if(!res.ok){ statusEl.textContent = "データが見つかりません（pipe_dimensions.json を同じ階層に置いてください）"; return; }
+      DATA = await res.json();
+
+      // 管種のユニーク候補
+      const types = [...new Set(DATA.map(r => r.pipe_type).filter(Boolean))].sort();
+      pipeSel.innerHTML = `<option value="">選択してください</option>` + types.map(t=>`<option value="${t}">${t}</option>`).join("");
+
+      // 呼び径は管種選択までは空
+      nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`;
+      statusEl.textContent = "管種を選んでください。";
+    }
+
+    // 2) 管種選択で呼び径候補を更新
+    pipeSel.addEventListener("change", ()=>{
+      const t = pipeSel.value;
+      if(!t){ nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`; statusEl.textContent="管種を選んでください。"; return; }
+      const ns = [...new Set(DATA.filter(r=>r.pipe_type===t).map(r=>r.nominal_diameter))].filter(v=>v!==null && v!==undefined).sort((a,b)=>a-b);
+      nominalSel.innerHTML = `<option value="">選択してください</option>` + ns.map(n=>`<option value="${n}">${n}</option>`).join("");
+      statusEl.textContent = "呼び径を選んでください。";
+    });
+
+    // 3) 検索
+    $("#search").addEventListener("click", ()=>{
+      const t = pipeSel.value;
+      const n = nominalSel.value ? Number(nominalSel.value) : null;
+      if(!t || n===null){ statusEl.textContent="管種/呼び径を選んでから検索してください。"; return; }
+
+      // 最初に一致したレコード
+      const rec = DATA.find(r => r.pipe_type===t && Number(r.nominal_diameter)===n);
+      if(!rec){ statusEl.textContent="一致するデータが見つかりません。"; outCard.style.display="none"; return; }
+
+      // 出力（F=全部表示）
+      $("#o_type").textContent = rec.pipe_type ?? "-";
+      $("#o_nominal").textContent = rec.nominal_diameter ?? "-";
+      $("#o_outer").textContent = rec.outer_diameter ?? "-";
+      $("#o_t1").textContent = rec.thickness_type1 ?? "-";
+      $("#o_t3").textContent = rec.thickness_type3 ?? "-";
+      $("#o_ltype").textContent = rec.lining_type ?? "-";
+      $("#o_lth").textContent = rec.lining_thickness ?? "-";
+      $("#o_det").textContent = rec.detector ?? "-";
+      $("#o_idx").textContent = rec.index_value ?? "-";
+
+      outCard.style.display = "";
+      statusEl.textContent = "検索完了。";
+    });
+
+    // 4) クリア
+    $("#clear").addEventListener("click", ()=>{
+      pipeSel.selectedIndex = 0;
+      nominalSel.innerHTML = `<option value="">先に管種を選ぶ</option>`;
+      outCard.style.display = "none";
+      statusEl.textContent = "管種を選んでください。";
+    });
+
+    // 初期化
+    loadData();
+  </script>
+</body>
+</html>
